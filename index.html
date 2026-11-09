@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reserva tu cita · Barbería</title>
+<meta name="description" content="Reserva tu corte o barba online en menos de un minuto.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- EmailJS (opcional): descomenta y rellena CONFIG.emailjs en el script
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script> -->
+<style>
+/* ---------- Tokens ---------- */
+:root{
+  --bg:#10201b; --surface:#173028; --line:#2a4a3f;
+  --ink:#f1ebdf; --muted:#9db3a9;
+  --brass:#e0b04f; --brass-ink:#241a05; --red:#c4412f; --danger:#ff8f7e;
+  --r:14px; --font-display:"Bricolage Grotesque",system-ui,sans-serif; --font-body:"Figtree",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:400 1rem/1.5 var(--font-body);min-height:100vh;padding-bottom:6.5rem}
+h1,h2{font-family:var(--font-display);line-height:1.1;letter-spacing:-.01em}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding:0 1.1rem}
+
+/* ---------- Cabecera + barra de progreso (poste de barbero) ---------- */
+header{padding:1.6rem 0 1.2rem}
+header h1{font-size:clamp(1.9rem,7vw,2.6rem);font-weight:800}
+header p{color:var(--muted);margin-top:.35rem}
+.pole{height:10px;border-radius:99px;background:var(--surface);overflow:hidden;margin-top:1.1rem}
+.pole i{display:block;height:100%;width:33.33%;border-radius:99px;transition:width .4s ease;
+  background:repeating-linear-gradient(45deg,var(--red) 0 8px,var(--ink) 8px 16px,#3d6fa8 16px 24px,var(--ink) 24px 32px);
+  background-size:45px 45px;animation:spin 1.2s linear infinite}
+@keyframes spin{to{background-position:45px 0}}
+.stepname{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem;margin-top:.5rem}
+.stepname b{color:var(--ink);font-weight:600}
+
+/* ---------- Pasos ---------- */
+section[hidden]{display:none}
+section h2{font-size:1.4rem;margin:1.4rem 0 .9rem}
+.list{display:grid;gap:.7rem}
+
+/* Servicios */
+.svc{display:flex;justify-content:space-between;align-items:center;gap:1rem;width:100%;text-align:left;
+  background:var(--surface);border:2px solid var(--line);border-radius:var(--r);padding:1rem 1.1rem;cursor:pointer;transition:border-color .15s,background .15s}
+.svc:hover{border-color:var(--muted)}
+.svc[aria-checked="true"]{border-color:var(--brass);background:#1d3a30}
+.svc strong{display:block;font-family:var(--font-display);font-size:1.15rem}
+.svc small{color:var(--muted)}
+.svc .price{font-family:var(--font-display);font-weight:800;font-size:1.3rem;color:var(--brass)}
+
+/* Días */
+.days{display:flex;gap:.55rem;overflow-x:auto;padding-bottom:.6rem;scroll-snap-type:x proximity}
+.day{flex:0 0 auto;width:4.2rem;scroll-snap-align:start;text-align:center;background:var(--surface);border:2px solid var(--line);
+  border-radius:var(--r);padding:.6rem 0;cursor:pointer}
+.day span{display:block;font-size:.8rem;color:var(--muted);text-transform:capitalize}
+.day b{font-family:var(--font-display);font-size:1.4rem}
+.day[aria-pressed="true"]{border-color:var(--brass);background:var(--brass);color:var(--brass-ink)}
+.day[aria-pressed="true"] span{color:var(--brass-ink)}
+.day:disabled{opacity:.35;cursor:not-allowed}
+
+/* Horas */
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(5rem,1fr));gap:.55rem}
+.slot{padding:.7rem 0;text-align:center;font-weight:600;background:var(--surface);border:2px solid var(--line);border-radius:10px;cursor:pointer}
+.slot:hover:not(:disabled){border-color:var(--muted)}
+.slot[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
+.slot:disabled{cursor:not-allowed;color:#587468;background:transparent;border-style:dashed;text-decoration:line-through}
+.hint{color:var(--muted);font-size:.9rem;margin-top:.8rem}
+.empty{color:var(--muted);padding:1rem 0}
+
+/* Formulario */
+.field{margin-bottom:1rem}
+label{display:block;font-weight:600;margin-bottom:.35rem}
+input{width:100%;background:var(--surface);border:2px solid var(--line);border-radius:10px;padding:.8rem .9rem;font-size:1rem}
+input[aria-invalid="true"]{border-color:var(--danger)}
+.err{color:var(--danger);font-size:.88rem;min-height:1.2em;margin-top:.25rem}
+.recap{background:var(--surface);border:2px dashed var(--line);border-radius:var(--r);padding:.9rem 1.1rem;margin-bottom:1.2rem}
+.recap p+p{margin-top:.2rem;color:var(--muted)}
+
+/* Barra inferior fija */
+.bar{position:fixed;inset:auto 0 0 0;background:rgba(16,32,27,.96);border-top:1px solid var(--line);padding:.8rem 0 calc(.8rem + env(safe-area-inset-bottom,0px));backdrop-filter:blur(8px)}
+.bar .wrap{display:flex;gap:.7rem;align-items:center}
+.bar .total{flex:1;line-height:1.2}
+.bar .total small{display:block;color:var(--muted)}
+.bar .total b{font-family:var(--font-display);font-size:1.2rem}
+.btn{border:0;border-radius:99px;padding:.85rem 1.5rem;font-weight:600;cursor:pointer;background:var(--brass);color:var(--brass-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+[hidden]{display:none!important}
+
+/* Éxito */
+.done{text-align:center;padding:2.5rem 0}
+.done .tick{width:4.5rem;height:4.5rem;border-radius:50%;background:var(--brass);color:var(--brass-ink);display:grid;place-items:center;font-size:2.2rem;margin:0 auto 1.2rem}
+.done h2{margin:0 0 .6rem;font-size:1.8rem}
+.done .recap{text-align:left;margin:1.5rem 0}
+.toast{position:fixed;left:50%;top:1rem;transform:translateX(-50%);background:var(--red);color:#fff;padding:.7rem 1.1rem;border-radius:10px;max-width:90vw;z-index:9}
+
+@media (prefers-reduced-motion:reduce){.pole i{animation:none;transition:none}}
+@media (min-width:640px){.slots{grid-template-columns:repeat(5,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Reserva tu cita</h1>
+    <p>Elige servicio, día y hora. Sin llamadas ni mensajes.</p>
+    <div class="pole" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" aria-label="Progreso de la reserva"><i id="progress"></i></div>
+    <div class="stepname"><b id="stepTitle">Servicio</b><span id="stepCount">Paso 1 de 3</span></div>
+  </header>
+
+  <main>
+    <!-- PASO 1: servicio -->
+    <section id="step1" aria-labelledby="h1s">
+      <h2 id="h1s">¿Qué te hacemos hoy?</h2>
+      <div class="list" id="services" role="radiogroup" aria-labelledby="h1s"></div>
+    </section>
+
+    <!-- PASO 2: fecha y hora -->
+    <section id="step2" aria-labelledby="h2s" hidden>
+      <h2 id="h2s">Elige día</h2>
+      <div class="days" id="days"></div>
+      <h2>Elige hora</h2>
+      <div class="slots" id="slots" aria-live="polite"></div>
+      <p class="hint">Las horas tachadas ya están reservadas o no caben con la duración de tu servicio.</p>
+    </section>
+
+    <!-- PASO 3: datos -->
+    <section id="step3" aria-labelledby="h3s" hidden>
+      <h2 id="h3s">Tus datos</h2>
+      <div class="recap" id="recap"></div>
+      <form id="form" novalidate>
+        <div class="field"><label for="name">Nombre</label>
+          <input id="name" name="name" autocomplete="name" required><div class="err" id="err-name"></div></div>
+        <div class="field"><label for="phone">Teléfono</label>
+          <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+34 600 000 000" required><div class="err" id="err-phone"></div></div>
+        <div class="field"><label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" autocomplete="email" required><div class="err" id="err-email"></div></div>
+      </form>
+    </section>
+
+    <!-- ÉXITO -->
+    <section id="success" class="done" hidden tabindex="-1">
+      <div class="tick" aria-hidden="true">✓</div>
+      <h2>¡Cita reservada con éxito!</h2>
+      <p>Te hemos enviado los detalles a ti y a la peluquería.</p>
+      <div class="recap" id="finalRecap"></div>
+      <button class="btn" id="again" type="button">Reservar otra cita</button>
+    </section>
+  </main>
+</div>
+
+<div class="bar" id="bar">
+  <div class="wrap">
+    <button class="btn ghost" id="back" type="button" hidden>Atrás</button>
+    <div class="total"><small id="barLabel">Selecciona un servicio</small><b id="barPrice">—</b></div>
+    <button class="btn" id="next" type="button" disabled>Continuar</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   CONFIGURACIÓN — edita aquí servicios, horarios y claves de EmailJS
+   ===================================================================== */
+const CONFIG = {
+  salonName: "Barbería",
+  salonEmail: "peluqueria@ejemplo.com",          // correo del dueño
+  slotStep: 30,                                   // minutos entre huecos
+  daysAhead: 14,                                  // días visibles en el calendario
+  // Horario por día de la semana (0=domingo … 6=sábado). Array vacío = cerrado.
+  hours: {
+    0: [],
+    1: [["09:00","14:00"],["16:00","20:00"]],
+    2: [["09:00","14:00"],["16:00","20:00"]],
+    3: [["09:00","14:00"],["16:00","20:00"]],
+    4: [["09:00","14:00"],["16:00","20:00"]],
+    5: [["09:00","14:00"],["16:00","20:00"]],
+    6: [["09:00","14:00"]]
+  },
+  // Deja vacío para simular el envío. Con claves reales usará EmailJS.
+  emailjs: { publicKey: "", serviceId: "", templateClient: "", templateSalon: "" }
+};
+
+const SERVICES = [
+  { id: "clasico",  name: "Corte clásico",  min: 30, price: 14 },
+  { id: "degradado",name: "Degradado",      min: 45, price: 16 },
+  { id: "barba",    name: "Barba",          min: 20, price: 10 },
+  { id: "combo",    name: "Corte + Barba",  min: 60, price: 22 }
+];
+
+/* =====================================================================
+   UTILIDADES
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+const toHHMM = (min) => String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0");
+const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const parseKey = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+const longDate = (k) => parseKey(k).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+const euro = (n) => n + " €";
+
+/* =====================================================================
+   "BASE DE DATOS" — hoy usa localStorage para simular las citas ya
+   ocupadas. Para producción, sustituye getBookings/saveBooking por
+   llamadas fetch() a tu backend (y valida el solapamiento también allí).
+   ===================================================================== */
+const STORE_KEY = "reservas_peluqueria_v1";
+function getBookings() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; }
+}
+function saveBooking(b) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify([...getBookings(), b])); } catch { /* modo privado: se ignora */ }
+}
+
+/* =====================================================================
+   LÓGICA DE DISPONIBILIDAD (anti-solapamientos)
+   Dos intervalos [a1,a2) y [b1,b2) se solapan si a1 < b2 && a2 > b1.
+   ===================================================================== */
+const overlaps = (s1, e1, s2, e2) => s1 < e2 && e1 > s2;
+
+function slotsFor(key, service) {
+  const date = parseKey(key);
+  const blocks = CONFIG.hours[date.getDay()] || [];
+  const booked = getBookings().filter((b) => b.date === key);
+  const now = new Date();
+  const isToday = key === dateKey(now);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const out = [];
+  for (const [from, to] of blocks) {
+    const end = toMin(to);
+    for (let t = toMin(from); t + CONFIG.slotStep <= end; t += CONFIG.slotStep) {
+      const fits = t + service.min <= end;                       // cabe antes de cerrar el turno
+      const free = !booked.some((b) => overlaps(t, t + service.min, b.start, b.end));
+      const future = !isToday || t > nowMin;                     // no permitir horas pasadas
+      out.push({ t, ok: fits && free && future });
+    }
+  }
+  return out;
+}
+
+/* =====================================================================
+   ESTADO + RENDER
+   ===================================================================== */
+const state = { step: 1, service: null, date: null, time: null };
+const STEPS = ["Servicio", "Fecha y hora", "Tus datos"];
+
+function renderServices() {
+  $("services").innerHTML = "";
+  SERVICES.forEach((s) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "svc"; b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", String(state.service?.id === s.id));
+    b.innerHTML = `<span><strong></strong><small></small></span><span class="price"></span>`;
+    b.querySelector("strong").textContent = s.name;
+    b.querySelector("small").textContent = s.min + " min";
+    b.querySelector(".price").textContent = euro(s.price);
+    b.onclick = () => { state.service = s; state.time = null; renderServices(); updateBar(); };
+    $("services").append(b);
+  });
+}
+
+function renderDays() {
+  $("days").innerHTML = "";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < CONFIG.daysAhead; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const key = dateKey(d);
+    const closed = !(CONFIG.hours[d.getDay()] || []).length;
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "day"; b.disabled = closed;
+    b.setAttribute("aria-pressed", String(state.date === key));
+    b.setAttribute("aria-label", longDate(key) + (closed ? " (cerrado)" : ""));
+    b.innerHTML = `<span></span><b></b>`;
+    b.querySelector("span").textContent = d.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
+    b.querySelector("b").textContent = d.getDate();
+    b.onclick = () => { state.date = key; state.time = null; renderDays(); renderSlots(); updateBar(); };
+    $("days").append(b);
+  }
+}
+
+function renderSlots() {
+  const box = $("slots"); box.innerHTML = "";
+  if (!state.date) { box.innerHTML = '<p class="empty">Elige un día para ver las horas.</p>'; return; }
+  const list = slotsFor(state.date, state.service);
+  if (!list.some((s) => s.ok)) { box.innerHTML = '<p class="empty">No quedan huecos este día. Prueba con otro.</p>'; return; }
+  list.forEach(({ t, ok }) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "slot"; b.textContent = toHHMM(t); b.disabled = !ok;
+    b.setAttribute("aria-pressed", String(state.time === t));
+    if (ok) b.onclick = () => { state.time = t; renderSlots(); updateBar(); };
+    box.append(b);
+  });
+}
+
+const summaryText = () => [
+  `${state.service.name} · ${state.service.min} min · ${euro(state.service.price)}`,
+  `${longDate(state.date)}, ${toHHMM(state.time)}–${toHHMM(state.time + state.service.min)}`
+];
+function fillRecap(el) {
+  el.innerHTML = "<p></p><p></p>";
+  const [a, b] = summaryText();
+  el.children[0].textContent = a; el.children[1].textContent = b;
+}
+
+function updateBar() {
+  const s = state.service;
+  $("barPrice").textContent = s ? euro(s.price) : "—";
+  $("barLabel").textContent = !s ? "Selecciona un servicio" : s.name + " · " + s.min + " min";
+  $("back").hidden = state.step === 1;
+  $("next").textContent = state.step === 3 ? "Confirmar reserva" : "Continuar";
+  $("next").disabled = (state.step === 1 && !s) || (state.step === 2 && (!state.date || state.time === null));
+}
+
+function goTo(n) {
+  state.step = n;
+  [1, 2, 3].forEach((i) => ($("step" + i).hidden = i !== n));
+  $("progress").style.width = (n / 3 * 100) + "%";
+  $("stepTitle").textContent = STEPS[n - 1];
+  $("stepCount").textContent = `Paso ${n} de 3`;
+  document.querySelector(".pole").setAttribute("aria-valuenow", n);
+  if (n === 2) { renderDays(); renderSlots(); }
+  if (n === 3) fillRecap($("recap"));
+  updateBar();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* =====================================================================
+   FORMULARIO: validación
+   ===================================================================== */
+const RULES = {
+  name:  (v) => v.trim().length >= 2 ? "" : "Escribe tu nombre.",
+  phone: (v) => /^\+?[\d\s-]{9,15}$/.test(v.trim()) ? "" : "Introduce un teléfono válido (9 a 15 cifras).",
+  email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? "" : "Introduce un correo válido, por ejemplo nombre@correo.com."
+};
+function validate() {
+  let ok = true;
+  for (const f of Object.keys(RULES)) {
+    const input = $(f), msg = RULES[f](input.value);
+    $("err-" + f).textContent = msg;
+    input.setAttribute("aria-invalid", String(!!msg));
+    if (msg && ok) { input.focus(); ok = false; }
+  }
+  return ok;
+}
+Object.keys(RULES).forEach((f) => $(f).addEventListener("input", () => {
+  if ($(f).getAttribute("aria-invalid") === "true" && !RULES[f]($(f).value)) {
+    $("err-" + f).textContent = ""; $(f).setAttribute("aria-invalid", "false");
+  }
+}));
+
+/* =====================================================================
+   ENVÍO — listo para EmailJS o backend propio
+   ===================================================================== */
+async function sendBooking(b) {
+  const cfg = CONFIG.emailjs;
+  if (cfg.publicKey && window.emailjs) {
+    // Variables que puedes usar en tus plantillas de EmailJS: {{name}}, {{service}}, {{date}}, {{time}}, {{price}}, {{phone}}, {{email}}
+    const vars = { name: b.name, phone: b.phone, email: b.email, service: b.serviceName,
+      date: longDate(b.date), time: toHHMM(b.start) + "–" + toHHMM(b.end), price: euro(b.price),
+      salon: CONFIG.salonName, salon_email: CONFIG.salonEmail };
+    const opts = { publicKey: cfg.publicKey };
+    // Una plantilla envía al cliente (to_email = {{email}}) y otra al negocio.
+    await emailjs.send(cfg.serviceId, cfg.templateClient, vars, opts);
+    await emailjs.send(cfg.serviceId, cfg.templateSalon, vars, opts);
+    return;
+  }
+  // Alternativa: backend ligero
+  // const r = await fetch("/api/reservas", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(b) });
+  // if (!r.ok) throw new Error("Error del servidor");
+
+  // Simulación: espera 900 ms y muestra el payload en consola
+  await new Promise((r) => setTimeout(r, 900));
+  console.info("[Simulación] Reserva enviada:", b);
+}
+
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.setAttribute("role", "alert"); t.textContent = msg;
+  document.body.append(t); setTimeout(() => t.remove(), 4500);
+}
+
+async function confirmBooking() {
+  if (!validate()) return;
+  // Comprobación final: otro cliente pudo reservar ese hueco mientras rellenabas el formulario.
+  const still = slotsFor(state.date, state.service).find((s) => s.t === state.time && s.ok);
+  if (!still) { toast("Ese hueco acaba de ocuparse. Elige otra hora."); state.time = null; goTo(2); return; }
+
+  const booking = {
+    id: Date.now().toString(36), date: state.date, start: state.time, end: state.time + state.service.min,
+    serviceId: state.service.id, serviceName: state.service.name, price: state.service.price,
+    name: $("name").value.trim(), phone: $("phone").value.trim(), email: $("email").value.trim()
+  };
+  const btn = $("next"); btn.disabled = true; btn.textContent = "Enviando…";
+  try {
+    await sendBooking(booking);
+    saveBooking(booking);                 // bloquea el hueco para futuras reservas
+    showSuccess(booking);
+  } catch (e) {
+    console.error(e);
+    toast("No se pudo enviar la reserva. Inténtalo de nuevo.");
+    btn.disabled = false; btn.textContent = "Confirmar reserva";
+  }
+}
+
+function showSuccess(b) {
+  [1, 2, 3].forEach((i) => ($("step" + i).hidden = true));
+  document.querySelector("header").hidden = true;
+  $("bar").hidden = true;
+  fillRecap($("finalRecap"));
+  const p = document.createElement("p"); p.textContent = "A nombre de " + b.name; $("finalRecap").append(p);
+  $("success").hidden = false; $("success").focus();
+}
+
+/* =====================================================================
+   EVENTOS
+   ===================================================================== */
+$("next").onclick = () => (state.step === 3 ? confirmBooking() : goTo(state.step + 1));
+$("back").onclick = () => goTo(state.step - 1);
+$("form").addEventListener("submit", (e) => { e.preventDefault(); confirmBooking(); });
+$("again").onclick = () => {
+  Object.assign(state, { service: null, date: null, time: null });
+  $("form").reset();
+  document.querySelector("header").hidden = false; $("bar").hidden = false; $("success").hidden = true;
+  renderServices(); goTo(1);
+};
+
+renderServices(); goTo(1);
+</script>
+</body>
+</html>
